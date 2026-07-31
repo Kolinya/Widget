@@ -76,6 +76,7 @@
   }
   .del-btn:hover { background: #E14B4B; }
   .del-btn svg { width: 14px; height: 14px; }
+  .del-btn:focus, .del-btn:focus-visible { outline: none; }
 </style>
 </head>
 <body>
@@ -144,6 +145,7 @@
 
   function doReset(e) {
     if (e) e.stopPropagation();
+    if (e && e.currentTarget && e.currentTarget.blur) e.currentTarget.blur();
     localStorage.removeItem(LS_ACC);
     tick();
   }
