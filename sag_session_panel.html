@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAG Session Tanks</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: transparent !important;
+    overflow: hidden;
+    font-family: 'Montserrat', system-ui, sans-serif;
+    color: #fff;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .panel {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(160deg, rgba(28,28,32,0.94), rgba(42,42,48,0.92));
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 14px;
+    backdrop-filter: blur(10px);
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .title {
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+  }
+  .summary {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .summary span { white-space: nowrap; }
+  .reset {
+    border: none;
+    background: #b23a3a;
+    color: #fff;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .table-wrap::-webkit-scrollbar { width: 6px; }
+  .table-wrap::-webkit-scrollbar-thumb { background: #ffe600; border-radius: 3px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  th {
+    text-align: center;
+    color: rgba(255,255,255,0.55);
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 0 4px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  th.left { text-align: left; }
+  td {
+    text-align: center;
+    padding: 9px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 14px;
+  }
+  td.name {
+    text-align: left;
+    color: #ffe600;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .empty {
+    text-align: center;
+    color: #888;
+    padding: 28px 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .err { color: #ff8888; text-align: center; padding: 20px; font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="head">
+    <div>
+      <div class="title">Сесія</div>
+      <div class="summary">
+        <span id="sBattles">—</span>
+        <span id="sWr">—</span>
+        <span id="sDmg">—</span>
+      </div>
+    </div>
+    <button class="reset" id="resetBtn" title="Скинути сесію">Скинути</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="left">Танк</th>
+          <th>Бої</th>
+          <th>%</th>
+          <th>с/ш</th>
+        </tr>
+      </thead>
+      <tbody id="body">
+        <tr><td colspan="4" class="empty">Завантаження…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+(function () {
+  const q = new URLSearchParams(location.search);
+  const ACCOUNT_ID = q.get('account_id') || q.get('dbid') || '';
+  const APP_ID = q.get('app_id') || 'a480f3908ece4c0aa35cdcd85458760a';
+  const realm = (q.get('realm') || 'eu').toLowerCase();
+  const API_HOST = {
+    eu: 'api.wotblitz.eu', na: 'api.wotblitz.com', us: 'api.wotblitz.com',
+    asia: 'api.wotblitz.asia', ru: 'api.wotblitz.ru'
+  }[realm] || 'api.wotblitz.eu';
+
+  const LS_ACC = 'sag_panel_acc_' + ACCOUNT_ID;
+  const LS_TANKS = 'sag_panel_tanks_' + ACCOUNT_ID;
+
+  // compact local names (popular); rest will show as ID until encyclopedia loads
+  const NAMES = {
+    1649:"Helsing",385:"Progetto 65",2945:"Progetto 46",18241:"Bourrasque",4481:"Kranvagn",
+    10785:"T110E5",7169:"IS-7",8497:"WZ-111 5A",12305:"E 50 M",14609:"Leopard 1",
+    16897:"Obj. 140",13825:"T-62A",19985:"Skorpion G",9601:"CS-52 LIS",14977:"CS-63",
+    24609:"Concept 1B",49:"Type 59",9217:"IS-6",2849:"T34",513:"IS",2561:"T-34-85",
+    4353:"T-44",5377:"IS-3",16657:"Rhm.-B. WT",18001:"FV4005",12049:"Jg.Pz. E 100"
+  };
+  let nameMap = Object.assign({}, NAMES);
+
+  function wrColor(wr) {
+    if (wr < 50) return '#FF5555';
+    if (wr < 60) return '#5db35e';
+    if (wr < 70) return '#3972c6';
+    return '#c06dff';
+  }
+
+  async function loadNames() {
+    try {
+      let page = 1, total = 1;
+      while (page <= total && page <= 8) {
+        const r = await fetch(`https://${API_HOST}/wotb/encyclopedia/vehicles/?application_id=${APP_ID}&language=ru&page_no=${page}&fields=name,tank_id`);
+        const d = await r.json();
+        if (d.status !== 'ok') break;
+        total = (d.meta && d.meta.page_total) || 1;
+        for (const id in d.data) {
+          if (!nameMap[id]) nameMap[id] = d.data[id].name;
+        }
+        page++;
+      }
+    } catch (e) {}
+  }
+
+  function reset() {
+    localStorage.removeItem(LS_ACC);
+    localStorage.removeItem(LS_TANKS);
+    tick();
+  }
+  document.getElementById('resetBtn').onclick = reset;
+
+  async function tick() {
+    if (!ACCOUNT_ID) {
+      document.getElementById('body').innerHTML = '<tr><td colspan="4" class="err">немає account_id</td></tr>';
+      return;
+    }
+    try {
+      const ts = Date.now();
+      const [accRes, tanksRes] = await Promise.all([
+        fetch(`https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`, {cache:'no-store'}),
+        fetch(`https://${API_HOST}/wotb/tanks/stats/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=tank_id,all.battles,all.wins,all.damage_dealt&_nc=${ts}`, {cache:'no-store'})
+      ]);
+      const accData = await accRes.json();
+      const tanksData = await tanksRes.json();
+      if (accData.status !== 'ok' || !accData.data[ACCOUNT_ID]) return;
+
+      const currentAll = accData.data[ACCOUNT_ID].statistics.all;
+      const currentTanks = tanksData.data[ACCOUNT_ID] || [];
+
+      let startAcc = null, startTanks = {};
+      try {
+        startAcc = JSON.parse(localStorage.getItem(LS_ACC) || 'null');
+        startTanks = JSON.parse(localStorage.getItem(LS_TANKS) || '{}');
+      } catch (e) {}
+
+      if (!startAcc) {
+        startAcc = currentAll;
+        currentTanks.forEach(t => { startTanks[t.tank_id] = t.all; });
+        localStorage.setItem(LS_ACC, JSON.stringify(startAcc));
+        localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
+      }
+
+      const battles = currentAll.battles - startAcc.battles;
+      const wins = currentAll.wins - startAcc.wins;
+      const damage = currentAll.damage_dealt - startAcc.damage_dealt;
+
+      document.getElementById('sBattles').textContent = '⚔ ' + battles;
+      if (battles > 0) {
+        const wr = +(wins / battles * 100).toFixed(1);
+        document.getElementById('sWr').textContent = wr + '%';
+        document.getElementById('sWr').style.color = wrColor(wr);
+        document.getElementById('sDmg').textContent = '♥ ' + Math.round(damage / battles);
+      } else {
+        document.getElementById('sWr').textContent = '0%';
+        document.getElementById('sWr').style.color = '#fff';
+        document.getElementById('sDmg').textContent = '♥ 0';
+      }
+
+      const list = [];
+      currentTanks.forEach(t => {
+        const id = t.tank_id;
+        const prev = startTanks[id] || { battles: 0, wins: 0, damage_dealt: 0 };
+        const db = (t.all.battles || 0) - (prev.battles || 0);
+        if (db > 0) {
+          const dw = (t.all.wins || 0) - (prev.wins || 0);
+          const dd = (t.all.damage_dealt || 0) - (prev.damage_dealt || 0);
+          list.push({
+            name: nameMap[id] || nameMap[String(id)] || ('ID ' + id),
+            battles: db,
+            wr: +(dw / db * 100).toFixed(1),
+            avg: Math.round(dd / db)
+          });
+        }
+      });
+      list.sort((a, b) => b.battles - a.battles);
+
+      const body = document.getElementById('body');
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="4" class="empty">Немає зіграних боїв у сесії</td></tr>';
+      } else {
+        body.innerHTML = list.map(t => `
+          <tr>
+            <td class="name">${t.name}</td>
+            <td>${t.battles}</td>
+            <td style="color:${wrColor(t.wr)}">${t.wr}%</td>
+            <td>${t.avg}</td>
+          </tr>`).join('');
+      }
+    } catch (e) {
+      console.error(e);
+      document.getElementById('body').innerHTML = '<tr><td colspan="4" class="err">помилка API</td></tr>';
+    }
+  }
+
+  loadNames().then(tick);
+  setInterval(tick, 15000);
+})();
+</script>
+</body>
+</html>
