@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>SAG Widget Carousel</title>
+<title>SAG Widget</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -61,100 +61,6 @@
     background: rgba(255,255,255,0.18);
     flex-shrink: 0;
   }
-  .chev {
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: transform 0.25s ease;
-    opacity: 0.85;
-  }
-  .chev svg { width: 16px; height: 16px; stroke: #fff; }
-  .bar.open .chev { transform: rotate(180deg); }
-
-  .carousel {
-    flex: 1;
-    min-height: 0;
-    display: none;
-    flex-direction: column;
-    background: linear-gradient(160deg, rgba(28,28,32,0.94), rgba(45,45,52,0.92));
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px;
-    padding: 8px 8px 10px;
-    backdrop-filter: blur(10px);
-    overflow: hidden;
-  }
-  .carousel.open { display: flex; }
-
-  .car-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 2px 6px 8px;
-    font-size: 11px;
-    font-weight: 800;
-    color: rgba(255,255,255,0.55);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    flex-shrink: 0;
-  }
-  .reset {
-    border: none;
-    background: #b23a3a;
-    color: #fff;
-    font-weight: 800;
-    font-size: 10px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    cursor: pointer;
-  }
-
-  .track-wrap {
-    flex: 1;
-    min-height: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    display: flex;
-    gap: 8px;
-    padding: 2px 2px 6px;
-  }
-  .track-wrap::-webkit-scrollbar { height: 5px; }
-  .track-wrap::-webkit-scrollbar-thumb {
-    background: #ffe600;
-    border-radius: 3px;
-  }
-
-  .card {
-    scroll-snap-align: start;
-    flex: 0 0 148px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 10px 10px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .card .tname {
-    font-size: 13px;
-    font-weight: 900;
-    color: #ffe600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .card .row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    font-weight: 800;
-  }
-  .card .lbl { color: rgba(255,255,255,0.45); font-size: 10px; }
-  
   .del-btn {
     display: flex;
     align-items: center;
@@ -170,15 +76,6 @@
   }
   .del-btn:hover { background: #E14B4B; }
   .del-btn svg { width: 14px; height: 14px; }
-
-  .empty {
-    width: 100%;
-    text-align: center;
-    color: #888;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 18px 8px;
-  }
 </style>
 </head>
 <body>
@@ -213,9 +110,6 @@
       </svg>
       <span class="val" id="dmg">—</span>
     </div>
-    <div class="chev" id="chev">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
     <button type="button" class="del-btn" id="resetBarBtn" title="Скинути сесію">
       <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="3 6 5 6 21 6"></polyline>
@@ -226,16 +120,6 @@
       </svg>
     </button>
 
-  </div>
-
-  <div class="carousel" id="carousel">
-    <div class="car-head">
-      <span>Танки сесії · гортай →</span>
-      <button class="reset" id="resetBtn">Скинути</button>
-    </div>
-    <div class="track-wrap" id="track">
-      <div class="empty">Немає боїв у сесії</div>
-    </div>
   </div>
 </div>
 <script>
@@ -250,17 +134,6 @@
   }[realm] || 'api.wotblitz.eu';
 
   const LS_ACC = 'sag_car_acc_' + ACCOUNT_ID;
-  const LS_TANKS = 'sag_car_tanks_' + ACCOUNT_ID;
-  const LS_OPEN = 'sag_car_open_' + ACCOUNT_ID;
-
-  const NAMES = {
-    1649:"Helsing",385:"Progetto 65",2945:"Progetto 46",18241:"Bourrasque",4481:"Kranvagn",
-    10785:"T110E5",7169:"IS-7",8497:"WZ-111 5A",12305:"E 50 M",14609:"Leopard 1",
-    16897:"Obj. 140",13825:"T-62A",19985:"Skorpion G",9601:"CS-52 LIS",14977:"CS-63",
-    24609:"Concept 1B",49:"Type 59",9217:"IS-6",2849:"T34",513:"IS",2561:"T-34-85",
-    4353:"T-44",5377:"IS-3",16657:"Rhm.-B. WT",18001:"FV4005",12049:"Jg.Pz. E 100"
-  };
-  let nameMap = Object.assign({}, NAMES);
 
   function wrColor(wr) {
     if (wr < 50) return '#FF5555';
@@ -269,43 +142,14 @@
     return '#c06dff';
   }
 
-  const bar = document.getElementById('bar');
-  const carousel = document.getElementById('carousel');
-  function setOpen(on) {
-    bar.classList.toggle('open', on);
-    carousel.classList.toggle('open', on);
-    try { localStorage.setItem(LS_OPEN, on ? '1' : '0'); } catch(e) {}
-  }
-  bar.addEventListener('click', function (e) {
-    if (e.target.closest && e.target.closest('#resetBtn')) return;
-    setOpen(!carousel.classList.contains('open'));
-  });
-  if (localStorage.getItem(LS_OPEN) === '1') setOpen(true);
   function doReset(e) {
     if (e) e.stopPropagation();
     localStorage.removeItem(LS_ACC);
-    localStorage.removeItem(LS_TANKS);
     tick();
   }
   var rb = document.getElementById('resetBarBtn');
   if (rb) rb.addEventListener('click', doReset);
-  var r2 = document.getElementById('resetBtn');
-  if (r2) r2.addEventListener('click', doReset);
 
-
-  async function loadNames() {
-    try {
-      let page = 1, total = 1;
-      while (page <= total && page <= 6) {
-        const r = await fetch(`https://${API_HOST}/wotb/encyclopedia/vehicles/?application_id=${APP_ID}&language=ru&page_no=${page}&fields=name,tank_id`);
-        const d = await r.json();
-        if (d.status !== 'ok') break;
-        total = (d.meta && d.meta.page_total) || 1;
-        for (const id in d.data) if (!nameMap[id]) nameMap[id] = d.data[id].name;
-        page++;
-      }
-    } catch (e) {}
-  }
 
   async function tick() {
     if (!ACCOUNT_ID) {
@@ -314,28 +158,20 @@
     }
     try {
       const ts = Date.now();
-      const [accRes, tanksRes] = await Promise.all([
-        fetch(`https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`, {cache:'no-store'}),
-        fetch(`https://${API_HOST}/wotb/tanks/stats/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=tank_id,all.battles,all.wins,all.damage_dealt&_nc=${ts}`, {cache:'no-store'})
-      ]);
+      const accRes = await fetch(`https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`, {cache:'no-store'});
       const accData = await accRes.json();
-      const tanksData = await tanksRes.json();
       if (accData.status !== 'ok' || !accData.data[ACCOUNT_ID]) return;
 
       const currentAll = accData.data[ACCOUNT_ID].statistics.all;
-      const currentTanks = tanksData.data[ACCOUNT_ID] || [];
 
-      let startAcc = null, startTanks = {};
+      let startAcc = null;
       try {
         startAcc = JSON.parse(localStorage.getItem(LS_ACC) || 'null');
-        startTanks = JSON.parse(localStorage.getItem(LS_TANKS) || '{}');
       } catch (e) {}
 
       if (!startAcc) {
         startAcc = currentAll;
-        currentTanks.forEach(t => { startTanks[t.tank_id] = t.all; });
         localStorage.setItem(LS_ACC, JSON.stringify(startAcc));
-        localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
       }
 
       const battles = currentAll.battles - startAcc.battles;
@@ -354,44 +190,13 @@
         document.getElementById('wr').style.color = '#fff';
         document.getElementById('dmg').textContent = '0';
       }
-
-      const list = [];
-      currentTanks.forEach(t => {
-        const id = t.tank_id;
-        const prev = startTanks[id] || { battles: 0, wins: 0, damage_dealt: 0 };
-        const db = (t.all.battles || 0) - (prev.battles || 0);
-        if (db > 0) {
-          const dw = (t.all.wins || 0) - (prev.wins || 0);
-          const dd = (t.all.damage_dealt || 0) - (prev.damage_dealt || 0);
-          list.push({
-            name: nameMap[id] || nameMap[String(id)] || ('ID ' + id),
-            battles: db,
-            wr: +(dw / db * 100).toFixed(1),
-            avg: Math.round(dd / db)
-          });
-        }
-      });
-      list.sort((a, b) => b.battles - a.battles);
-
-      const track = document.getElementById('track');
-      if (!list.length) {
-        track.innerHTML = '<div class="empty">Немає боїв у сесії</div>';
-      } else {
-        track.innerHTML = list.map(t => `
-          <div class="card">
-            <div class="tname">${t.name}</div>
-            <div class="row"><span class="lbl">Бої</span><span>${t.battles}</span></div>
-            <div class="row"><span class="lbl">%</span><span style="color:${wrColor(t.wr)}">${t.wr}%</span></div>
-            <div class="row"><span class="lbl">с/ш</span><span>${t.avg}</span></div>
-          </div>`).join('');
-      }
     } catch (e) {
       console.error(e);
       document.getElementById('battles').textContent = '!';
     }
   }
 
-  loadNames().then(tick);
+  tick();
   setInterval(tick, 15000);
 })();
 </script>
