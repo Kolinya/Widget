@@ -50,15 +50,16 @@
     border-radius: 999px;
     cursor: pointer;
   }
-  .reset:focus, .reset:focus-visible { outline: none; }
   .reset {
-    outline: none;
-    box-shadow: none;
+    -webkit-appearance: none;
+    appearance: none;
     -webkit-tap-highlight-color: transparent;
+    outline: none !important;
+    box-shadow: none !important;
   }
-  .reset:focus, .reset:focus-visible, .reset:active {
-    outline: none;
-    box-shadow: none;
+  .reset:focus, .reset:focus-visible, .reset:active, .reset:hover {
+    outline: none !important;
+    box-shadow: none !important;
   }
   .table-wrap {
     flex: 1;
@@ -110,7 +111,7 @@
 <div class="panel">
   <div class="head">
     <div class="title">Танки сесії</div>
-    <button class="reset" id="resetBtn" title="Скинути сесію">Скинути</button>
+    <div class="reset" id="resetBtn" role="button" tabindex="-1" title="Скинути сесію">Скинути</div>
   </div>
   <div class="table-wrap">
     <table>
