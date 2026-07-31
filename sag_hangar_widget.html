@@ -76,7 +76,15 @@
   }
   .del-btn:hover { background: #E14B4B; }
   .del-btn svg { width: 14px; height: 14px; }
-  .del-btn:focus, .del-btn:focus-visible { outline: none; }
+  .del-btn {
+    outline: none;
+    box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .del-btn:focus, .del-btn:focus-visible, .del-btn:active {
+    outline: none;
+    box-shadow: none;
+  }
 </style>
 </head>
 <body>
