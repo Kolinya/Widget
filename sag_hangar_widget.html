@@ -55,7 +55,7 @@
   }
   .err { color: #ff8888; font-size: 12px; font-weight: 800; text-align: center; width: 100%; }
 
-  /* Кнопка скидання */
+  /* Кнопка скидання (постійно видима) */
   .reset-btn {
     background: #d9534f;
     border: none;
@@ -86,13 +86,14 @@
 </head>
 <body>
 <div class="bar" id="bar">
-  <!-- 1. Справжні схрещені мечі -->
+  <!-- 1. Іконка боїв (точно як на вашому фото: стилізовані мечі з гардами) -->
   <div class="item" title="Бої">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14.5 17.5L3 6V3h3l11.5 11.5"/>
-      <line x1="13" y1="19" x2="19" y2="13"/>
-      <path d="M9.5 6.5L21 18v3h-3L6.5 9.5"/>
-      <line x1="11" y1="5" x2="5" y2="11"/>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 19L19 5"/>
+      <path d="M9 4.5L19.5 15"/>
+      <!-- Гарди / поперечини -->
+      <path d="M6.5 15.5L8.5 17.5"/>
+      <path d="M14.5 7.5L16.5 9.5"/>
     </svg>
     <span class="val" id="battles">—</span>
   </div>
@@ -107,13 +108,15 @@
   </div>
   <div class="div"></div>
 
-  <!-- 3. Серце, надламане зверху до половини -->
+  <!-- 3. Контур серця, надламаний зверху до половини -->
   <div class="item" title="Середній урон">
     <svg viewBox="0 0 24 24" fill="none" stroke="#FF5555" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <!-- Контур серця -->
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-      <!-- Надлам / тріщина зверху рівно до середиני -->
-      <path d="M12 3 L11 7 L13 10.5 L12 13" stroke="#FF5555" stroke-width="2" stroke-linejoin="round"/>
+      <!-- Ліва половина серця -->
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09"/>
+      <!-- Права половина серця -->
+      <path d="M12 5.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35"/>
+      <!-- Рівний надлам/тріщина зверху до половини -->
+      <path d="M12 3 L11.2 6.5 L12.8 9.5 L12 13" stroke="#FF5555" stroke-width="2" stroke-linejoin="round"/>
     </svg>
     <span class="val" id="dmg">—</span>
   </div>
