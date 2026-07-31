@@ -77,13 +77,15 @@
   .del-btn:hover { background: #E14B4B; }
   .del-btn svg { width: 14px; height: 14px; }
   .del-btn {
-    outline: none;
-    box-shadow: none;
+    -webkit-appearance: none;
+    appearance: none;
     -webkit-tap-highlight-color: transparent;
+    outline: none !important;
+    box-shadow: none !important;
   }
-  .del-btn:focus, .del-btn:focus-visible, .del-btn:active {
-    outline: none;
-    box-shadow: none;
+  .del-btn:focus, .del-btn:focus-visible, .del-btn:active, .del-btn:hover {
+    outline: none !important;
+    box-shadow: none !important;
   }
 </style>
 </head>
@@ -119,7 +121,7 @@
       </svg>
       <span class="val" id="dmg">—</span>
     </div>
-    <button type="button" class="del-btn" id="resetBarBtn" title="Скинути сесію">
+    <div class="del-btn" id="resetBarBtn" role="button" tabindex="-1" title="Скинути сесію">
       <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="3 6 5 6 21 6"></polyline>
         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
@@ -127,7 +129,7 @@
         <path d="M14 11v6"></path>
         <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
       </svg>
-    </button>
+    </div>
 
   </div>
 </div>
