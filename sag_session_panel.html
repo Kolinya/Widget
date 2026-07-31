@@ -50,6 +50,7 @@
     border-radius: 999px;
     cursor: pointer;
   }
+  .reset:focus, .reset:focus-visible { outline: none; }
   .table-wrap {
     flex: 1;
     overflow-y: auto;
@@ -882,7 +883,11 @@
     localStorage.removeItem(LS_TANKS);
     tick();
   }
-  document.getElementById('resetBtn').onclick = reset;
+  const resetBtnEl = document.getElementById('resetBtn');
+  resetBtnEl.onclick = function () {
+    resetBtnEl.blur();
+    reset();
+  };
 
   async function tick() {
     if (!ACCOUNT_ID) {
@@ -957,4 +962,3 @@
 </script>
 </body>
 </html>
-```[cite: 4]
