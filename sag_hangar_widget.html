@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>SAG Hangar Widget</title>
+<title>SAG Widget Carousel</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: 100%; height: 100%;
@@ -14,20 +14,30 @@
     font-family: 'Montserrat', system-ui, sans-serif;
     -webkit-user-select: none;
     user-select: none;
+    color: #fff;
+  }
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    padding: 4px;
+    gap: 6px;
   }
   .bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
-    height: 100%;
-    min-height: 48px;
+    min-height: 44px;
     padding: 4px 10px;
     gap: 6px;
-    background: linear-gradient(135deg, rgba(40,40,45,0.88), rgba(60,60,65,0.82));
+    background: linear-gradient(135deg, rgba(40,40,45,0.9), rgba(60,60,65,0.85));
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 999px;
     backdrop-filter: blur(8px);
+    cursor: pointer;
+    flex-shrink: 0;
   }
   .item {
     display: flex;
@@ -37,65 +47,193 @@
     flex: 1;
     min-width: 0;
   }
-  .item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .item svg { width: 15px; height: 15px; flex-shrink: 0; }
   .val {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 900;
     color: #fff;
     white-space: nowrap;
-    line-height: 1;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.55);
   }
   .div {
     width: 1px;
-    height: 22px;
+    height: 20px;
     background: rgba(255,255,255,0.18);
     flex-shrink: 0;
   }
-  .err { color: #ff8888; font-size: 12px; font-weight: 800; text-align: center; width: 100%; }
+  .chev {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+    opacity: 0.85;
+  }
+  .chev svg { width: 16px; height: 16px; stroke: #fff; }
+  .bar.open .chev { transform: rotate(180deg); }
+
+  .carousel {
+    flex: 1;
+    min-height: 0;
+    display: none;
+    flex-direction: column;
+    background: linear-gradient(160deg, rgba(28,28,32,0.94), rgba(45,45,52,0.92));
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 8px 8px 10px;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  .carousel.open { display: flex; }
+
+  .car-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 6px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .reset {
+    border: none;
+    background: #b23a3a;
+    color: #fff;
+    font-weight: 800;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .track-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    gap: 8px;
+    padding: 2px 2px 6px;
+  }
+  .track-wrap::-webkit-scrollbar { height: 5px; }
+  .track-wrap::-webkit-scrollbar-thumb {
+    background: #ffe600;
+    border-radius: 3px;
+  }
+
+  .card {
+    scroll-snap-align: start;
+    flex: 0 0 148px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 10px 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card .tname {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffe600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card .row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .card .lbl { color: rgba(255,255,255,0.45); font-size: 10px; }
+  .empty {
+    width: 100%;
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 18px 8px;
+  }
 </style>
 </head>
 <body>
-<div class="bar" id="bar">
-  <div class="item" title="Бої">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/>
-    </svg>
-    <span class="val" id="battles">—</span>
+<div class="wrap">
+  <div class="bar" id="bar">
+    <div class="item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
+        <line x1="13" y1="19" x2="19" y2="13"></line>
+        <line x1="16" y1="16" x2="20" y2="20"></line>
+        <line x1="19" y1="21" x2="21" y2="19"></line>
+        <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline>
+        <line x1="5" y1="14" x2="9" y2="18"></line>
+        <line x1="7" y1="17" x2="4" y2="20"></line>
+        <line x1="3" y1="19" x2="5" y2="21"></line>
+      </svg>
+      <span class="val" id="battles">—</span>
+    </div>
+    <div class="div"></div>
+    <div class="item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#4EFA8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 22V4"></path>
+        <path d="M4 4h14l-3 4 3 4H4"></path>
+      </svg>
+      <span class="val" id="wr">—</span>
+    </div>
+    <div class="div"></div>
+    <div class="item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#FF5555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19.5 13.5c1.7-1.7 3-3.6 3-6a5 5 0 0 0-9-3 5 5 0 0 0-9 3c0 4.2 3.2 7.4 10.5 12.7l0.7-0.5"></path>
+        <path d="M12.5 4.5l-1.2 4.3 2.2 2.2-1.2 4.3"></path>
+      </svg>
+      <span class="val" id="dmg">—</span>
+    </div>
+    <div class="chev" id="chev">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
   </div>
-  <div class="div"></div>
-  <div class="item" title="Вінрейт">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#5db35e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 22V4"/><path d="M4 4h14l-3 4 3 4H4"/>
-    </svg>
-    <span class="val" id="wr">—</span>
-  </div>
-  <div class="div"></div>
-  <div class="item" title="Середній урон">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#FF5555" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-    </svg>
-    <span class="val" id="dmg">—</span>
+
+  <div class="carousel" id="carousel">
+    <div class="car-head">
+      <span>Танки сесії · гортай →</span>
+      <button class="reset" id="resetBtn">Скинути</button>
+    </div>
+    <div class="track-wrap" id="track">
+      <div class="empty">Немає боїв у сесії</div>
+    </div>
   </div>
 </div>
 <script>
 (function () {
   const q = new URLSearchParams(location.search);
   const ACCOUNT_ID = q.get('account_id') || q.get('dbid') || '';
-  const APP_ID = q.get('app_id') || q.get('application_id') || 'YOUR_APP_ID'; // <- або пропиши свій application_id тут
-  // realm: eu / na / asia / ru — API host
+  const APP_ID = q.get('app_id') || 'a480f3908ece4c0aa35cdcd85458760a';
   const realm = (q.get('realm') || 'eu').toLowerCase();
   const API_HOST = {
-    eu: 'api.wotblitz.eu',
-    na: 'api.wotblitz.com',
-    us: 'api.wotblitz.com',
-    asia: 'api.wotblitz.asia',
-    ru: 'api.wotblitz.ru',
-    cn: 'api.wotblitz.cn'
+    eu: 'api.wotblitz.eu', na: 'api.wotblitz.com', us: 'api.wotblitz.com',
+    asia: 'api.wotblitz.asia', ru: 'api.wotblitz.ru'
   }[realm] || 'api.wotblitz.eu';
 
-  const LS_ACC = 'sag_hangar_start_acc_' + ACCOUNT_ID;
-  const LS_TIME = 'sag_hangar_start_ts_' + ACCOUNT_ID;
+  const LS_ACC = 'sag_car_acc_' + ACCOUNT_ID;
+  const LS_TANKS = 'sag_car_tanks_' + ACCOUNT_ID;
+  const LS_OPEN = 'sag_car_open_' + ACCOUNT_ID;
+
+  const NAMES = {
+    1649:"Helsing",385:"Progetto 65",2945:"Progetto 46",18241:"Bourrasque",4481:"Kranvagn",
+    10785:"T110E5",7169:"IS-7",8497:"WZ-111 5A",12305:"E 50 M",14609:"Leopard 1",
+    16897:"Obj. 140",13825:"T-62A",19985:"Skorpion G",9601:"CS-52 LIS",14977:"CS-63",
+    24609:"Concept 1B",49:"Type 59",9217:"IS-6",2849:"T34",513:"IS",2561:"T-34-85",
+    4353:"T-44",5377:"IS-3",16657:"Rhm.-B. WT",18001:"FV4005",12049:"Jg.Pz. E 100"
+  };
+  let nameMap = Object.assign({}, NAMES);
 
   function wrColor(wr) {
     if (wr < 50) return '#FF5555';
@@ -104,43 +242,117 @@
     return '#c06dff';
   }
 
+  const bar = document.getElementById('bar');
+  const carousel = document.getElementById('carousel');
+  function setOpen(on) {
+    bar.classList.toggle('open', on);
+    carousel.classList.toggle('open', on);
+    try { localStorage.setItem(LS_OPEN, on ? '1' : '0'); } catch(e) {}
+  }
+  bar.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('#resetBtn')) return;
+    setOpen(!carousel.classList.contains('open'));
+  });
+  if (localStorage.getItem(LS_OPEN) === '1') setOpen(true);
+
+  document.getElementById('resetBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    localStorage.removeItem(LS_ACC);
+    localStorage.removeItem(LS_TANKS);
+    tick();
+  });
+
+  async function loadNames() {
+    try {
+      let page = 1, total = 1;
+      while (page <= total && page <= 6) {
+        const r = await fetch(`https://${API_HOST}/wotb/encyclopedia/vehicles/?application_id=${APP_ID}&language=ru&page_no=${page}&fields=name,tank_id`);
+        const d = await r.json();
+        if (d.status !== 'ok') break;
+        total = (d.meta && d.meta.page_total) || 1;
+        for (const id in d.data) if (!nameMap[id]) nameMap[id] = d.data[id].name;
+        page++;
+      }
+    } catch (e) {}
+  }
+
   async function tick() {
-    if (!ACCOUNT_ID || APP_ID === 'YOUR_APP_ID') {
-      document.getElementById('bar').innerHTML = '<div class="err">немає account_id / app_id</div>';
+    if (!ACCOUNT_ID) {
+      document.getElementById('battles').textContent = '?';
       return;
     }
     try {
       const ts = Date.now();
-      const url = `https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      const data = await res.json();
-      if (data.status !== 'ok' || !data.data || !data.data[ACCOUNT_ID]) {
-        document.getElementById('battles').textContent = '?';
-        return;
+      const [accRes, tanksRes] = await Promise.all([
+        fetch(`https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`, {cache:'no-store'}),
+        fetch(`https://${API_HOST}/wotb/tanks/stats/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=tank_id,all.battles,all.wins,all.damage_dealt&_nc=${ts}`, {cache:'no-store'})
+      ]);
+      const accData = await accRes.json();
+      const tanksData = await tanksRes.json();
+      if (accData.status !== 'ok' || !accData.data[ACCOUNT_ID]) return;
+
+      const currentAll = accData.data[ACCOUNT_ID].statistics.all;
+      const currentTanks = tanksData.data[ACCOUNT_ID] || [];
+
+      let startAcc = null, startTanks = {};
+      try {
+        startAcc = JSON.parse(localStorage.getItem(LS_ACC) || 'null');
+        startTanks = JSON.parse(localStorage.getItem(LS_TANKS) || '{}');
+      } catch (e) {}
+
+      if (!startAcc) {
+        startAcc = currentAll;
+        currentTanks.forEach(t => { startTanks[t.tank_id] = t.all; });
+        localStorage.setItem(LS_ACC, JSON.stringify(startAcc));
+        localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
       }
-      const all = data.data[ACCOUNT_ID].statistics.all;
-      let start = null;
-      try { start = JSON.parse(localStorage.getItem(LS_ACC) || 'null'); } catch (e) {}
-      if (!start) {
-        start = all;
-        localStorage.setItem(LS_ACC, JSON.stringify(all));
-        localStorage.setItem(LS_TIME, String(Date.now()));
-      }
-      const battles = all.battles - start.battles;
-      const wins = all.wins - start.wins;
-      const damage = all.damage_dealt - start.damage_dealt;
+
+      const battles = currentAll.battles - startAcc.battles;
+      const wins = currentAll.wins - startAcc.wins;
+      const damage = currentAll.damage_dealt - startAcc.damage_dealt;
+
       document.getElementById('battles').textContent = battles;
       if (battles > 0) {
         const wr = +(wins / battles * 100).toFixed(1);
-        const avg = Math.round(damage / battles);
         const el = document.getElementById('wr');
         el.textContent = wr + '%';
         el.style.color = wrColor(wr);
-        document.getElementById('dmg').textContent = avg;
+        document.getElementById('dmg').textContent = Math.round(damage / battles);
       } else {
         document.getElementById('wr').textContent = '0%';
         document.getElementById('wr').style.color = '#fff';
         document.getElementById('dmg').textContent = '0';
+      }
+
+      const list = [];
+      currentTanks.forEach(t => {
+        const id = t.tank_id;
+        const prev = startTanks[id] || { battles: 0, wins: 0, damage_dealt: 0 };
+        const db = (t.all.battles || 0) - (prev.battles || 0);
+        if (db > 0) {
+          const dw = (t.all.wins || 0) - (prev.wins || 0);
+          const dd = (t.all.damage_dealt || 0) - (prev.damage_dealt || 0);
+          list.push({
+            name: nameMap[id] || nameMap[String(id)] || ('ID ' + id),
+            battles: db,
+            wr: +(dw / db * 100).toFixed(1),
+            avg: Math.round(dd / db)
+          });
+        }
+      });
+      list.sort((a, b) => b.battles - a.battles);
+
+      const track = document.getElementById('track');
+      if (!list.length) {
+        track.innerHTML = '<div class="empty">Немає боїв у сесії</div>';
+      } else {
+        track.innerHTML = list.map(t => `
+          <div class="card">
+            <div class="tname">${t.name}</div>
+            <div class="row"><span class="lbl">Бої</span><span>${t.battles}</span></div>
+            <div class="row"><span class="lbl">%</span><span style="color:${wrColor(t.wr)}">${t.wr}%</span></div>
+            <div class="row"><span class="lbl">с/ш</span><span>${t.avg}</span></div>
+          </div>`).join('');
       }
     } catch (e) {
       console.error(e);
@@ -148,15 +360,8 @@
     }
   }
 
-  // double-click bar = reset session
-  document.getElementById('bar').addEventListener('dblclick', function () {
-    localStorage.removeItem(LS_ACC);
-    localStorage.removeItem(LS_TIME);
-    tick();
-  });
-
-  tick();
-  setInterval(tick, 5000);
+  loadNames().then(tick);
+  setInterval(tick, 15000);
 })();
 </script>
 </body>
