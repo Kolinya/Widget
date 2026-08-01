@@ -178,8 +178,9 @@
     asia: 'api.wotblitz.asia', ru: 'api.wotblitz.ru'
   }[realm] || 'api.wotblitz.eu';
 
-  const LS_ACC = 'sag_car_acc_' + ACCOUNT_ID;
-  const LS_TREND = 'sag_car_trend_' + ACCOUNT_ID;
+  const LS_ACC = 'sag_session_acc_' + ACCOUNT_ID;
+  const LS_TANKS = 'sag_session_tanks_' + ACCOUNT_ID;
+  const LS_TREND = 'sag_session_trend_' + ACCOUNT_ID;
 
   function wrColor(wr) {
     if (wr < 50) return '#FF5555';
@@ -227,7 +228,13 @@
     if (e) e.stopPropagation();
     if (e && e.currentTarget && e.currentTarget.blur) e.currentTarget.blur();
     localStorage.removeItem(LS_ACC);
+    localStorage.removeItem(LS_TANKS);
     localStorage.removeItem(LS_TREND);
+    // legacy keys (старі назви) — щоб точно скинулось
+    localStorage.removeItem('sag_car_acc_' + ACCOUNT_ID);
+    localStorage.removeItem('sag_car_trend_' + ACCOUNT_ID);
+    localStorage.removeItem('sag_panel_acc_' + ACCOUNT_ID);
+    localStorage.removeItem('sag_panel_tanks_' + ACCOUNT_ID);
     trendState = { prevWr: null, prevDmg: null, wrTrend: null, dmgTrend: null };
     document.getElementById('wrTrend').textContent = '';
     document.getElementById('dmgTrend').textContent = '';
@@ -301,6 +308,17 @@
     }
   }
 
+  window.addEventListener('storage', function (ev) {
+    if (!ev.key) return;
+    if (ev.key.indexOf('sag_session_') === 0 || ev.key.indexOf('sag_car_') === 0 || ev.key.indexOf('sag_panel_') === 0) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(LS_TREND) || 'null');
+        if (saved) trendState = saved;
+        else trendState = { prevWr: null, prevDmg: null, wrTrend: null, dmgTrend: null };
+      } catch (e) {}
+      tick();
+    }
+  });
   tick();
   setInterval(tick, 5000);
 })();
