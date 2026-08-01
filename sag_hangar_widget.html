@@ -157,6 +157,7 @@
   }[realm] || 'api.wotblitz.eu';
 
   const LS_ACC = 'sag_car_acc_' + ACCOUNT_ID;
+  const LS_TREND = 'sag_car_trend_' + ACCOUNT_ID;
 
   function wrColor(wr) {
     if (wr < 50) return '#FF5555';
@@ -166,10 +167,18 @@
   }
 
   // Пам'ять для стрілок тренду: зберігає попереднє значення й останній
-  // напрямок. Якщо між оновленнями значення не змінилось, стрілка НЕ
-  // зникає і НЕ скидається — лишається та, що була показана востаннє.
-  let prevWr = null, prevDmg = null;
-  let wrTrend = null, dmgTrend = null; // 'up' | 'down' | null
+  // напрямок У localStorage (не просто в змінних JS!), бо гра перезавантажує
+  // сторінку віджета щоразу при поверненні в ангар — звичайні змінні
+  // обнулялись би при кожному такому перезавантаженні.
+  let trendState = { prevWr: null, prevDmg: null, wrTrend: null, dmgTrend: null };
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_TREND) || 'null');
+    if (saved) trendState = saved;
+  } catch (e) {}
+
+  function saveTrendState() {
+    try { localStorage.setItem(LS_TREND, JSON.stringify(trendState)); } catch (e) {}
+  }
 
   function renderTrend(elId, current, prevVal, currentTrendState) {
     const el = document.getElementById(elId);
@@ -196,7 +205,8 @@
     if (e) e.stopPropagation();
     if (e && e.currentTarget && e.currentTarget.blur) e.currentTarget.blur();
     localStorage.removeItem(LS_ACC);
-    prevWr = null; prevDmg = null; wrTrend = null; dmgTrend = null;
+    localStorage.removeItem(LS_TREND);
+    trendState = { prevWr: null, prevDmg: null, wrTrend: null, dmgTrend: null };
     document.getElementById('wrTrend').textContent = '';
     document.getElementById('dmgTrend').textContent = '';
     tick();
@@ -242,10 +252,11 @@
         el.style.color = wrColor(wr);
         document.getElementById('dmg').textContent = avgDmg;
 
-        wrTrend = renderTrend('wrTrend', wr, prevWr, wrTrend);
-        dmgTrend = renderTrend('dmgTrend', avgDmg, prevDmg, dmgTrend);
-        prevWr = wr;
-        prevDmg = avgDmg;
+        trendState.wrTrend = renderTrend('wrTrend', wr, trendState.prevWr, trendState.wrTrend);
+        trendState.dmgTrend = renderTrend('dmgTrend', avgDmg, trendState.prevDmg, trendState.dmgTrend);
+        trendState.prevWr = wr;
+        trendState.prevDmg = avgDmg;
+        saveTrendState();
       } else {
         document.getElementById('wr').textContent = '0%';
         document.getElementById('wr').style.color = '#fff';
