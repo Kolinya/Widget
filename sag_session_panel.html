@@ -916,7 +916,13 @@
       ]);
       const accData = await accRes.json();
       const tanksData = await tanksRes.json();
-      if (accData.status !== 'ok' || !accData.data[ACCOUNT_ID]) return;
+      if (accData.status === 'ok' && !accData.data[ACCOUNT_ID]) {
+        // status "ok", але дані по акаунту відсутні — типова ознака
+        // закритого профілю (наприклад, прес-акаунт WG), а не помилки API.
+        document.getElementById('body').innerHTML = '<tr><td colspan="4" class="err">Прес-акаунт</td></tr>';
+        return;
+      }
+      if (accData.status !== 'ok') return;
 
       const currentAll = accData.data[ACCOUNT_ID].statistics.all;
       const currentTanks = tanksData.data[ACCOUNT_ID] || [];
@@ -970,6 +976,7 @@
     }
   }
 
+  tick();
   loadNames().then(tick);
   setInterval(tick, 5000);
 })();
