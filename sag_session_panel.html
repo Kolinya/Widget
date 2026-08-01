@@ -927,7 +927,7 @@
       if (accData.status !== 'ok') return;
 
       const currentAll = accData.data[ACCOUNT_ID].statistics.all;
-      const currentTanks = tanksData.data[ACCOUNT_ID] || [];
+      const currentTanks = (tanksData && tanksData.status === 'ok' && tanksData.data && tanksData.data[ACCOUNT_ID]) ? tanksData.data[ACCOUNT_ID] : [];
 
       let startAcc = null, startTanks = {};
       try {
@@ -951,7 +951,7 @@
       const list = [];
       currentTanks.forEach(t => {
         const id = t.tank_id;
-        const prev = startTanks[id] || { battles: 0, wins: 0, damage_dealt: 0 };
+        const prev = startTanks[id] || startTanks[String(id)] || { battles: 0, wins: 0, damage_dealt: 0 };
         const db = (t.all.battles || 0) - (prev.battles || 0);
         if (db > 0) {
           const dw = (t.all.wins || 0) - (prev.wins || 0);
@@ -976,8 +976,8 @@
       const orderIndex = {};
       order.forEach((id, i) => { orderIndex[String(id)] = i; });
       list.sort((a, b) => {
-        const ia = orderIndex.hasOwnProperty(a.id) ? orderIndex[a.id] : 9999;
-        const ib = orderIndex.hasOwnProperty(b.id) ? orderIndex[b.id] : 9999;
+        const ia = (a.id in orderIndex) ? orderIndex[a.id] : 9999;
+        const ib = (b.id in orderIndex) ? orderIndex[b.id] : 9999;
         return ia - ib;
       });
 
