@@ -145,6 +145,7 @@
 
   const LS_ACC = 'sag_session_acc_' + ACCOUNT_ID;
   const LS_TANKS = 'sag_session_tanks_' + ACCOUNT_ID;
+  const LS_ORDER = 'sag_session_order_' + ACCOUNT_ID;
 
   const LOCAL_TANK_NAMES = {
     1: { name: "T-34" },
@@ -894,6 +895,7 @@
   function reset() {
     localStorage.removeItem(LS_ACC);
     localStorage.removeItem(LS_TANKS);
+    localStorage.removeItem(LS_ORDER);
     localStorage.removeItem('sag_session_trend_' + ACCOUNT_ID);
     localStorage.removeItem('sag_car_acc_' + ACCOUNT_ID);
     localStorage.removeItem('sag_car_trend_' + ACCOUNT_ID);
@@ -942,6 +944,10 @@
         localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
       }
 
+      let order = [];
+      try { order = JSON.parse(localStorage.getItem(LS_ORDER) || '[]'); } catch (e) { order = []; }
+      if (!Array.isArray(order)) order = [];
+
       const list = [];
       currentTanks.forEach(t => {
         const id = t.tank_id;
@@ -950,7 +956,13 @@
         if (db > 0) {
           const dw = (t.all.wins || 0) - (prev.wins || 0);
           const dd = (t.all.damage_dealt || 0) - (prev.damage_dealt || 0);
+          // перша поява танка в сесії — додаємо в кінець порядку
+          const sid = String(id);
+          if (order.indexOf(sid) === -1 && order.indexOf(id) === -1) {
+            order.push(sid);
+          }
           list.push({
+            id: sid,
             name: nameMap[id] || nameMap[String(id)] || ('ID ' + id),
             battles: db,
             wr: +(dw / db * 100).toFixed(1),
@@ -958,7 +970,16 @@
           });
         }
       });
-      list.sort((a, b) => b.battles - a.battles);
+      try { localStorage.setItem(LS_ORDER, JSON.stringify(order)); } catch (e) {}
+
+      // порядок гри: хто раніше з'явився в сесії — вище
+      const orderIndex = {};
+      order.forEach((id, i) => { orderIndex[String(id)] = i; });
+      list.sort((a, b) => {
+        const ia = orderIndex.hasOwnProperty(a.id) ? orderIndex[a.id] : 9999;
+        const ib = orderIndex.hasOwnProperty(b.id) ? orderIndex[b.id] : 9999;
+        return ia - ib;
+      });
 
       const body = document.getElementById('body');
       if (!list.length) {
