@@ -42,6 +42,25 @@
     cursor: pointer;
     flex-shrink: 0;
   }
+  .stats {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: 6px;
+  }
+  .press-msg {
+    display: none;
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 900;
+    color: #FF5555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  }
   .item {
     display: flex;
     align-items: center;
@@ -104,6 +123,7 @@
 <body>
 <div class="wrap">
   <div class="bar" id="bar">
+    <div class="stats" id="stats">
     <div class="item">
       <svg viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
@@ -133,6 +153,8 @@
       </svg>
       <span class="val" id="dmg">—</span><span class="trend" id="dmgTrend"></span>
     </div>
+    </div>
+    <span class="press-msg" id="pressMsg"></span>
     <div class="del-btn" id="resetBarBtn" role="button" tabindex="-1" title="Скинути сесію">
       <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="3 6 5 6 21 6"></polyline>
@@ -224,7 +246,18 @@
       const ts = Date.now();
       const accRes = await fetch(`https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`, {cache:'no-store'});
       const accData = await accRes.json();
-      if (accData.status !== 'ok' || !accData.data[ACCOUNT_ID]) return;
+      if (accData.status === 'ok' && !accData.data[ACCOUNT_ID]) {
+        // status "ok", але дані по акаунту відсутні — це типова ознака
+        // закритого профілю (наприклад, прес-акаунт WG), а не помилки API.
+        document.getElementById('stats').style.display = 'none';
+        const pm = document.getElementById('pressMsg');
+        pm.style.display = 'block';
+        pm.textContent = 'Прес-акаунт';
+        return;
+      }
+      document.getElementById('stats').style.display = 'flex';
+      document.getElementById('pressMsg').style.display = 'none';
+      if (accData.status !== 'ok') return;
 
       const currentAll = accData.data[ACCOUNT_ID].statistics.all;
 
