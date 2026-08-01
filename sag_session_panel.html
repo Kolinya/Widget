@@ -115,7 +115,6 @@
 <div class="panel">
   <div class="head">
     <div class="title">Танки сесії</div>
-    <div class="reset" id="resetBtn" role="button" tabindex="-1" title="Скинути сесію">Скинути</div>
   </div>
   <div class="table-wrap">
     <table>
@@ -144,8 +143,8 @@
     asia: 'api.wotblitz.asia', ru: 'api.wotblitz.ru'
   }[realm] || 'api.wotblitz.eu';
 
-  const LS_ACC = 'sag_panel_acc_' + ACCOUNT_ID;
-  const LS_TANKS = 'sag_panel_tanks_' + ACCOUNT_ID;
+  const LS_ACC = 'sag_session_acc_' + ACCOUNT_ID;
+  const LS_TANKS = 'sag_session_tanks_' + ACCOUNT_ID;
 
   const LOCAL_TANK_NAMES = {
     1: { name: "T-34" },
@@ -895,13 +894,14 @@
   function reset() {
     localStorage.removeItem(LS_ACC);
     localStorage.removeItem(LS_TANKS);
+    localStorage.removeItem('sag_session_trend_' + ACCOUNT_ID);
+    localStorage.removeItem('sag_car_acc_' + ACCOUNT_ID);
+    localStorage.removeItem('sag_car_trend_' + ACCOUNT_ID);
+    localStorage.removeItem('sag_panel_acc_' + ACCOUNT_ID);
+    localStorage.removeItem('sag_panel_tanks_' + ACCOUNT_ID);
     tick();
   }
-  const resetBtnEl = document.getElementById('resetBtn');
-  resetBtnEl.onclick = function () {
-    resetBtnEl.blur();
-    reset();
-  };
+
 
   async function tick() {
     if (!ACCOUNT_ID) {
@@ -935,8 +935,10 @@
 
       if (!startAcc) {
         startAcc = currentAll;
-        currentTanks.forEach(t => { startTanks[t.tank_id] = t.all; });
         localStorage.setItem(LS_ACC, JSON.stringify(startAcc));
+      }
+      if (!startTanks || Object.keys(startTanks).length === 0) {
+        currentTanks.forEach(t => { startTanks[t.tank_id] = t.all; });
         localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
       }
 
@@ -976,6 +978,12 @@
     }
   }
 
+  window.addEventListener('storage', function (ev) {
+    if (!ev.key) return;
+    if (ev.key.indexOf('sag_session_') === 0 || ev.key.indexOf('sag_car_') === 0 || ev.key.indexOf('sag_panel_') === 0) {
+      tick();
+    }
+  });
   tick();
   loadNames().then(tick);
   setInterval(tick, 5000);
