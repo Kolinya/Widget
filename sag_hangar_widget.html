@@ -229,6 +229,7 @@
     if (e && e.currentTarget && e.currentTarget.blur) e.currentTarget.blur();
     localStorage.removeItem(LS_ACC);
     localStorage.removeItem(LS_TANKS);
+    localStorage.removeItem('sag_session_order_' + ACCOUNT_ID);
     localStorage.removeItem(LS_TREND);
     // legacy keys (старі назви) — щоб точно скинулось
     localStorage.removeItem('sag_car_acc_' + ACCOUNT_ID);
@@ -251,8 +252,13 @@
     }
     try {
       const ts = Date.now();
-      const accRes = await fetch(`https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`, {cache:'no-store'});
+      const [accRes, tanksRes] = await Promise.all([
+        fetch(`https://${API_HOST}/wotb/account/info/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=statistics.all&_nc=${ts}`, {cache:'no-store'}),
+        fetch(`https://${API_HOST}/wotb/tanks/stats/?application_id=${APP_ID}&account_id=${ACCOUNT_ID}&fields=tank_id,all.battles,all.wins,all.damage_dealt&_nc=${ts}`, {cache:'no-store'})
+      ]);
       const accData = await accRes.json();
+      let tanksData = null;
+      try { tanksData = await tanksRes.json(); } catch (e) {}
       if (accData.status === 'ok' && !accData.data[ACCOUNT_ID]) {
         // status "ok", але дані по акаунту відсутні — це типова ознака
         // закритого профілю (наприклад, прес-акаунт WG), а не помилки API.
@@ -276,6 +282,12 @@
       if (!startAcc) {
         startAcc = currentAll;
         localStorage.setItem(LS_ACC, JSON.stringify(startAcc));
+        // база по танках — щоб бокова панель бачила ту саму сесію
+        const startTanks = {};
+        const tankList = (tanksData && tanksData.data && tanksData.data[ACCOUNT_ID]) ? tanksData.data[ACCOUNT_ID] : [];
+        tankList.forEach(t => { startTanks[t.tank_id] = t.all; });
+        localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
+        localStorage.removeItem('sag_session_order_' + ACCOUNT_ID);
       }
 
       const battles = currentAll.battles - startAcc.battles;
