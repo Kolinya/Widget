@@ -170,19 +170,7 @@
 <script>
 (function () {
   const q = new URLSearchParams(location.search);
-  function findAccountIdFromStorage() {
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.indexOf('sag_session_acc_') === 0) {
-          const id = key.slice('sag_session_acc_'.length);
-          if (id) return id;
-        }
-      }
-    } catch (e) {}
-    return '';
-  }
-  const ACCOUNT_ID = q.get('account_id') || q.get('dbid') || findAccountIdFromStorage() || '';
+  const ACCOUNT_ID = q.get('account_id') || q.get('dbid') || '';
   const APP_ID = q.get('app_id') || 'a480f3908ece4c0aa35cdcd85458760a';
   const realm = (q.get('realm') || 'eu').toLowerCase();
   const API_HOST = {
