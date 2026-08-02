@@ -52,6 +52,9 @@
   .press-msg {
     display: none;
     flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     text-align: center;
     font-size: 13px;
     font-weight: 700;
@@ -60,6 +63,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  }
+  .press-msg svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
   .item {
     display: flex;
@@ -263,13 +271,18 @@
         // status "ok", але дані по акаунту відсутні — це типова ознака
         // закритого профілю (наприклад, прес-акаунт WG), а не помилки API.
         document.getElementById('stats').style.display = 'none';
+        const rb = document.getElementById('resetBarBtn');
+        if (rb) rb.style.display = 'none';
         const pm = document.getElementById('pressMsg');
-        pm.style.display = 'block';
-        pm.textContent = 'Прес-акаунт';
+        pm.style.display = 'flex';
+        pm.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#FF5555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1" fill="#FF5555" stroke="none"/><circle cx="15" cy="12" r="1" fill="#FF5555" stroke="none"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/><path d="M12 3a9 9 0 0 0-9 9v1a4 4 0 0 0 2 3.4V20a1 1 0 0 0 1 1h2v-2h2v2h2v-2h2v2h2a1 1 0 0 0 1-1v-3.6A4 4 0 0 0 21 13v-1a9 9 0 0 0-9-9z"/></svg><span>Прес-акаунт</span><svg viewBox="0 0 24 24" fill="none" stroke="#FF5555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1" fill="#FF5555" stroke="none"/><circle cx="15" cy="12" r="1" fill="#FF5555" stroke="none"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/><path d="M12 3a9 9 0 0 0-9 9v1a4 4 0 0 0 2 3.4V20a1 1 0 0 0 1 1h2v-2h2v2h2v-2h2v2h2a1 1 0 0 0 1-1v-3.6A4 4 0 0 0 21 13v-1a9 9 0 0 0-9-9z"/></svg>`;
         return;
       }
       document.getElementById('stats').style.display = 'flex';
       document.getElementById('pressMsg').style.display = 'none';
+      document.getElementById('pressMsg').innerHTML = '';
+      const rbShow = document.getElementById('resetBarBtn');
+      if (rbShow) rbShow.style.display = 'flex';
       if (accData.status !== 'ok') return;
 
       const currentAll = accData.data[ACCOUNT_ID].statistics.all;
