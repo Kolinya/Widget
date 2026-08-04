@@ -36,8 +36,105 @@
     margin-bottom: 10px;
     flex-shrink: 0;
   }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 999px;
+    padding: 3px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.5);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab.active {
+    background: #ffe600;
+    color: #1a1a1e;
+  }
+  .acc-wrap {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .acc-wrap.visible { display: block; }
+  .table-wrap.hidden { display: none; }
+  .acc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .acc-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .acc-card .lbl {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.45);
+  }
+  .acc-card .num {
+    font-size: 19px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .acc-card .delta {
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .acc-card .delta.up { color: #4EFA8A; }
+  .acc-card .delta.down { color: #FF5555; }
+  .acc-card .delta.flat { color: rgba(255,255,255,0.35); }
+  .acc-hero {
+    text-align: center;
+    background: linear-gradient(135deg, rgba(255,230,0,0.12), rgba(255,230,0,0.04));
+    border: 1px solid rgba(255,230,0,0.2);
+    border-radius: 12px;
+    padding: 14px 10px;
+    margin-bottom: 8px;
+  }
+  .acc-hero .lbl {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 2px;
+  }
+  .acc-hero .num {
+    font-size: 34px;
+    font-weight: 900;
+    color: #ffe600;
+    line-height: 1.1;
+  }
+  .acc-hero .delta {
+    justify-content: center;
+    font-size: 12px;
+    margin-top: 2px;
+  }
   .title {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 900;
     color: rgba(255,255,255,0.5);
     text-transform: uppercase;
@@ -48,7 +145,7 @@
     background: #b23a3a;
     color: #fff;
     font-weight: 800;
-    font-size: 13px;
+    font-size: 11px;
     padding: 5px 10px;
     border-radius: 999px;
     cursor: pointer;
@@ -81,7 +178,7 @@
   th {
     text-align: center;
     color: rgba(255,255,255,0.55);
-    font-size: 13px;
+    font-size: 11px;
     text-transform: uppercase;
     padding: 0 4px 8px;
     border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -105,7 +202,7 @@
     text-align: center;
     color: #888;
     padding: 28px 8px;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
   }
   .err { color: #ff8888; text-align: center; padding: 20px; font-weight: 800; }
@@ -114,9 +211,13 @@
 <body>
 <div class="panel">
   <div class="head">
-    <div class="title">Танки сесії</div>
+    <div class="title" id="panelTitle">Танки сесії</div>
   </div>
-  <div class="table-wrap">
+  <div class="tabs">
+    <div class="tab active" id="tabSession">Сесія</div>
+    <div class="tab" id="tabAccount">Акаунт</div>
+  </div>
+  <div class="table-wrap" id="sessionView">
     <table>
       <thead>
         <tr>
@@ -130,6 +231,21 @@
         <tr><td colspan="4" class="empty">Завантаження…</td></tr>
       </tbody>
     </table>
+  </div>
+  <div class="acc-wrap" id="accountView">
+    <div class="acc-hero">
+      <div class="lbl">Вінрейт акаунта</div>
+      <div class="num" id="accWr">—</div>
+      <div class="delta" id="accWrDelta"></div>
+    </div>
+    <div class="acc-grid" id="accGrid">
+      <div class="acc-card"><div class="lbl">Бої всього</div><div class="num" id="accBattles">—</div><div class="delta" id="accBattlesDelta"></div></div>
+      <div class="acc-card"><div class="lbl">Сер. шкода</div><div class="num" id="accDmg">—</div><div class="delta" id="accDmgDelta"></div></div>
+      <div class="acc-card"><div class="lbl">Виживання</div><div class="num" id="accSurvival">—</div><div class="delta" id="accSurvivalDelta"></div></div>
+      <div class="acc-card"><div class="lbl">Засвіт/бій</div><div class="num" id="accSpot">—</div><div class="delta" id="accSpotDelta"></div></div>
+      <div class="acc-card"><div class="lbl">К/Д (вбивства)</div><div class="num" id="accKD">—</div><div class="delta" id="accKDDelta"></div></div>
+      <div class="acc-card"><div class="lbl">Коеф. шкоди</div><div class="num" id="accDmgRatio">—</div><div class="delta" id="accDmgRatioDelta"></div></div>
+    </div>
   </div>
 </div>
 <script>
@@ -916,6 +1032,86 @@
   }
 
 
+  function lifetimeAvg(all) {
+    const battles = all.battles || 0;
+    const wins = all.wins || 0;
+    const damage = all.damage_dealt || 0;
+    const damageReceived = all.damage_received || 0;
+    const frags = all.frags || 0;
+    const survived = all.survived_battles || 0;
+    const spotted = all.spotted || 0;
+    const deaths = Math.max(battles - survived, 0);
+    return {
+      battles,
+      wr: battles ? (wins / battles * 100) : 0,
+      dmg: battles ? (damage / battles) : 0,
+      survivalPct: battles ? (survived / battles * 100) : 0,
+      spotRate: battles ? (spotted / battles) : 0,
+      kd: deaths ? (frags / deaths) : frags,
+      dmgRatio: damageReceived ? (damage / damageReceived) : 0,
+    };
+  }
+
+  function renderDelta(elId, before, now, decimals, suffix) {
+    const el = document.getElementById(elId);
+    const diff = now - before;
+    // Зовсім крихітні зміни (похибка округлення) не показуємо як рух
+    const threshold = decimals === 0 ? 0.5 : Math.pow(10, -decimals) / 2;
+    if (Math.abs(diff) < threshold) {
+      el.textContent = '— без змін';
+      el.className = 'delta flat';
+      return;
+    }
+    const sign = diff > 0 ? '▲' : '▼';
+    const cls = diff > 0 ? 'up' : 'down';
+    el.textContent = `${sign} ${Math.abs(diff).toFixed(decimals)}${suffix} з початку сесії`;
+    el.className = 'delta ' + cls;
+  }
+
+  function renderAccountTab(currentAll, startAcc) {
+    const now = lifetimeAvg(currentAll);
+    const before = lifetimeAvg(startAcc || currentAll);
+
+    document.getElementById('accWr').textContent = now.wr.toFixed(2) + '%';
+    document.getElementById('accWr').style.color = wrColor(now.wr);
+    renderDelta('accWrDelta', before.wr, now.wr, 2, '%');
+
+    document.getElementById('accBattles').textContent = now.battles.toLocaleString('uk-UA');
+    renderDelta('accBattlesDelta', before.battles, now.battles, 0, '');
+
+    document.getElementById('accDmg').textContent = Math.round(now.dmg).toLocaleString('uk-UA');
+    renderDelta('accDmgDelta', before.dmg, now.dmg, 0, '');
+
+    document.getElementById('accSurvival').textContent = now.survivalPct.toFixed(1) + '%';
+    renderDelta('accSurvivalDelta', before.survivalPct, now.survivalPct, 1, '%');
+
+    document.getElementById('accSpot').textContent = now.spotRate.toFixed(2);
+    renderDelta('accSpotDelta', before.spotRate, now.spotRate, 2, '');
+
+    document.getElementById('accKD').textContent = now.kd.toFixed(2);
+    renderDelta('accKDDelta', before.kd, now.kd, 2, '');
+
+    document.getElementById('accDmgRatio').textContent = now.dmgRatio.toFixed(2);
+    renderDelta('accDmgRatioDelta', before.dmgRatio, now.dmgRatio, 2, '');
+  }
+
+  const tabSession = document.getElementById('tabSession');
+  const tabAccount = document.getElementById('tabAccount');
+  const sessionView = document.getElementById('sessionView');
+  const accountView = document.getElementById('accountView');
+  const panelTitle = document.getElementById('panelTitle');
+
+  function showTab(name) {
+    const isSession = name === 'session';
+    tabSession.classList.toggle('active', isSession);
+    tabAccount.classList.toggle('active', !isSession);
+    sessionView.classList.toggle('hidden', !isSession);
+    accountView.classList.toggle('visible', !isSession);
+    panelTitle.textContent = isSession ? 'Танки сесії' : 'Загальна статистика';
+  }
+  tabSession.addEventListener('click', () => showTab('session'));
+  tabAccount.addEventListener('click', () => showTab('account'));
+
   async function tick() {
     if (!ACCOUNT_ID) {
       document.getElementById('body').innerHTML = '<tr><td colspan="4" class="err">немає account_id</td></tr>';
@@ -954,6 +1150,10 @@
         currentTanks.forEach(t => { startTanks[t.tank_id] = t.all; });
         localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
       }
+
+      // Вкладка "Акаунт" — загальна статистика акаунта "було" (на момент
+      // відкриття сесії) у порівнянні з "зараз" (жива, поточна)
+      renderAccountTab(currentAll, startAcc);
 
       let order = [];
       try { order = JSON.parse(localStorage.getItem(LS_ORDER) || '[]'); } catch (e) { order = []; }
