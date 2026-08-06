@@ -178,9 +178,28 @@
 <script>
 (function () {
   const q = new URLSearchParams(location.search);
-  const ACCOUNT_ID = q.get('account_id') || q.get('dbid') || '';
   const APP_ID = q.get('app_id') || 'a480f3908ece4c0aa35cdcd85458760a';
-  const realm = (q.get('realm') || 'eu').toLowerCase();
+
+  // В ангарі id приходить з URL; у бою часто немає — беремо останній з localStorage
+  // (той самий origin GitHub Pages → спільний storage, якщо клієнт не ізолює WebView).
+  let ACCOUNT_ID = q.get('account_id') || q.get('dbid') || '';
+  let realm = (q.get('realm') || '').toLowerCase();
+
+  if (ACCOUNT_ID) {
+    try {
+      localStorage.setItem('sag_last_account_id', String(ACCOUNT_ID));
+      if (realm) localStorage.setItem('sag_last_realm', realm);
+    } catch (e) {}
+  } else {
+    try {
+      ACCOUNT_ID = localStorage.getItem('sag_last_account_id') || '';
+      if (!realm) realm = (localStorage.getItem('sag_last_realm') || 'eu').toLowerCase();
+    } catch (e) {
+      ACCOUNT_ID = '';
+    }
+  }
+  if (!realm) realm = 'eu';
+
   const API_HOST = {
     eu: 'api.wotblitz.eu', na: 'api.wotblitz.com', us: 'api.wotblitz.com',
     asia: 'api.wotblitz.asia', ru: 'api.wotblitz.ru'
