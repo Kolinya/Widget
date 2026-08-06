@@ -180,10 +180,24 @@
   const q = new URLSearchParams(location.search);
   const APP_ID = q.get('app_id') || 'a480f3908ece4c0aa35cdcd85458760a';
 
-  // В ангарі id приходить з URL; у бою часто немає — беремо останній з localStorage
-  // (той самий origin GitHub Pages → спільний storage, якщо клієнт не ізолює WebView).
+  // В ангарі id з URL; у бою — з localStorage (якщо WebView спільний).
   let ACCOUNT_ID = q.get('account_id') || q.get('dbid') || '';
   let realm = (q.get('realm') || '').toLowerCase();
+
+  function findAccountFromStorage() {
+    try {
+      let id = localStorage.getItem('sag_last_account_id') || '';
+      if (id) return id;
+      // запасний варіант: будь-який ключ сесії sag_session_acc_<id>
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('sag_session_acc_') === 0) {
+          return k.slice('sag_session_acc_'.length);
+        }
+      }
+    } catch (e) {}
+    return '';
+  }
 
   if (ACCOUNT_ID) {
     try {
@@ -191,12 +205,10 @@
       if (realm) localStorage.setItem('sag_last_realm', realm);
     } catch (e) {}
   } else {
+    ACCOUNT_ID = findAccountFromStorage();
     try {
-      ACCOUNT_ID = localStorage.getItem('sag_last_account_id') || '';
       if (!realm) realm = (localStorage.getItem('sag_last_realm') || 'eu').toLowerCase();
-    } catch (e) {
-      ACCOUNT_ID = '';
-    }
+    } catch (e) {}
   }
   if (!realm) realm = 'eu';
 
@@ -205,9 +217,10 @@
     asia: 'api.wotblitz.asia', ru: 'api.wotblitz.ru'
   }[realm] || 'api.wotblitz.eu';
 
-  const LS_ACC = 'sag_session_acc_' + ACCOUNT_ID;
-  const LS_TANKS = 'sag_session_tanks_' + ACCOUNT_ID;
-  const LS_TREND = 'sag_session_trend_' + ACCOUNT_ID;
+  function lsAcc() { return 'sag_session_acc_' + ACCOUNT_ID; }
+  function lsTanks() { return 'sag_session_tanks_' + ACCOUNT_ID; }
+  function lsTrend() { return 'sag_session_trend_' + ACCOUNT_ID; }
+  function lsOrder() { return 'sag_session_order_' + ACCOUNT_ID; }
 
   function wrColor(wr) {
     if (wr < 50) return '#FF5555';
@@ -222,12 +235,12 @@
   // обнулялись би при кожному такому перезавантаженні.
   let trendState = { prevWr: null, prevDmg: null, wrTrend: null, dmgTrend: null };
   try {
-    const saved = JSON.parse(localStorage.getItem(LS_TREND) || 'null');
+    const saved = JSON.parse(localStorage.getItem(lsTrend()) || 'null');
     if (saved) trendState = saved;
   } catch (e) {}
 
   function saveTrendState() {
-    try { localStorage.setItem(LS_TREND, JSON.stringify(trendState)); } catch (e) {}
+    try { localStorage.setItem(lsTrend(), JSON.stringify(trendState)); } catch (e) {}
   }
 
   function renderTrend(elId, current, prevVal, currentTrendState) {
@@ -254,10 +267,10 @@
   function doReset(e) {
     if (e) e.stopPropagation();
     if (e && e.currentTarget && e.currentTarget.blur) e.currentTarget.blur();
-    localStorage.removeItem(LS_ACC);
-    localStorage.removeItem(LS_TANKS);
-    localStorage.removeItem('sag_session_order_' + ACCOUNT_ID);
-    localStorage.removeItem(LS_TREND);
+    localStorage.removeItem(lsAcc());
+    localStorage.removeItem(lsTanks());
+    localStorage.removeItem(lsOrder());
+    localStorage.removeItem(lsTrend());
     // legacy keys (старі назви) — щоб точно скинулось
     localStorage.removeItem('sag_car_acc_' + ACCOUNT_ID);
     localStorage.removeItem('sag_car_trend_' + ACCOUNT_ID);
@@ -274,8 +287,17 @@
 
   async function tick() {
     if (!ACCOUNT_ID) {
-      document.getElementById('battles').textContent = '?';
-      return;
+      ACCOUNT_ID = findAccountFromStorage();
+      if (!ACCOUNT_ID) {
+        document.getElementById('battles').textContent = '?';
+        document.getElementById('wr').textContent = '—';
+        document.getElementById('dmg').textContent = '—';
+        return;
+      }
+      try {
+        const saved = JSON.parse(localStorage.getItem(lsTrend()) || 'null');
+        if (saved) trendState = saved;
+      } catch (e) {}
     }
     try {
       const ts = Date.now();
@@ -308,18 +330,18 @@
 
       let startAcc = null;
       try {
-        startAcc = JSON.parse(localStorage.getItem(LS_ACC) || 'null');
+        startAcc = JSON.parse(localStorage.getItem(lsAcc()) || 'null');
       } catch (e) {}
 
       if (!startAcc) {
         startAcc = currentAll;
-        localStorage.setItem(LS_ACC, JSON.stringify(startAcc));
+        localStorage.setItem(lsAcc(), JSON.stringify(startAcc));
         // база по танках — щоб бокова панель бачила ту саму сесію
         const startTanks = {};
         const tankList = (tanksData && tanksData.data && tanksData.data[ACCOUNT_ID]) ? tanksData.data[ACCOUNT_ID] : [];
         tankList.forEach(t => { startTanks[t.tank_id] = t.all; });
-        localStorage.setItem(LS_TANKS, JSON.stringify(startTanks));
-        localStorage.removeItem('sag_session_order_' + ACCOUNT_ID);
+        localStorage.setItem(lsTanks(), JSON.stringify(startTanks));
+        localStorage.removeItem(lsOrder());
       }
 
       const battles = currentAll.battles - startAcc.battles;
@@ -356,7 +378,7 @@
     if (!ev.key) return;
     if (ev.key.indexOf('sag_session_') === 0 || ev.key.indexOf('sag_car_') === 0 || ev.key.indexOf('sag_panel_') === 0) {
       try {
-        const saved = JSON.parse(localStorage.getItem(LS_TREND) || 'null');
+        const saved = JSON.parse(localStorage.getItem(lsTrend()) || 'null');
         if (saved) trendState = saved;
         else trendState = { prevWr: null, prevDmg: null, wrTrend: null, dmgTrend: null };
       } catch (e) {}
