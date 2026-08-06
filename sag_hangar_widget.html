@@ -180,15 +180,26 @@
   const q = new URLSearchParams(location.search);
   const APP_ID = q.get('app_id') || 'a480f3908ece4c0aa35cdcd85458760a';
 
-  // В ангарі id з URL; у бою — з localStorage (якщо WebView спільний).
+  // Ангар: id з URL. Бій: localStorage → cookie → (пізніше) config.json
   let ACCOUNT_ID = q.get('account_id') || q.get('dbid') || '';
   let realm = (q.get('realm') || '').toLowerCase();
+
+  function cookieGet(name) {
+    try {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    } catch (e) { return ''; }
+  }
+  function cookieSet(name, value) {
+    try {
+      document.cookie = name + '=' + encodeURIComponent(value) + '; path=/; max-age=2592000; SameSite=Lax';
+    } catch (e) {}
+  }
 
   function findAccountFromStorage() {
     try {
       let id = localStorage.getItem('sag_last_account_id') || '';
       if (id) return id;
-      // запасний варіант: будь-який ключ сесії sag_session_acc_<id>
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (k && k.indexOf('sag_session_acc_') === 0) {
@@ -199,16 +210,63 @@
     return '';
   }
 
+  function persistIdentity(id, r) {
+    if (!id) return;
+    try {
+      localStorage.setItem('sag_last_account_id', String(id));
+      if (r) localStorage.setItem('sag_last_realm', r);
+    } catch (e) {}
+    cookieSet('sag_last_account_id', String(id));
+    if (r) cookieSet('sag_last_realm', r);
+  }
+
+  function loadIdentityFallback() {
+    let id = findAccountFromStorage() || cookieGet('sag_last_account_id') || '';
+    let r = '';
+    try { r = localStorage.getItem('sag_last_realm') || ''; } catch (e) {}
+    if (!r) r = cookieGet('sag_last_realm') || '';
+    return { id: id, realm: (r || 'eu').toLowerCase() };
+  }
+
+  // Синхронізація старту сесії через cookie (якщо localStorage в бою інший)
+  function persistSessionSnapshot(startAcc, startTanks) {
+    if (!ACCOUNT_ID || !startAcc) return;
+    try {
+      const payload = JSON.stringify({
+        id: String(ACCOUNT_ID),
+        realm: realm,
+        acc: startAcc,
+        tanks: startTanks || null,
+        t: Date.now()
+      });
+      // cookie ~4KB ліміт — без tanks якщо занадто велико
+      let full = payload;
+      if (full.length > 3500) {
+        full = JSON.stringify({ id: String(ACCOUNT_ID), realm: realm, acc: startAcc, tanks: null, t: Date.now() });
+      }
+      cookieSet('sag_session_snap', full);
+      try { localStorage.setItem('sag_session_snap', full); } catch (e) {}
+    } catch (e) {}
+  }
+
+  function loadSessionSnapshot() {
+    try {
+      let raw = '';
+      try { raw = localStorage.getItem('sag_session_snap') || ''; } catch (e) {}
+      if (!raw) raw = cookieGet('sag_session_snap') || '';
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (!o || !o.acc) return null;
+      return o;
+    } catch (e) { return null; }
+  }
+
   if (ACCOUNT_ID) {
-    try {
-      localStorage.setItem('sag_last_account_id', String(ACCOUNT_ID));
-      if (realm) localStorage.setItem('sag_last_realm', realm);
-    } catch (e) {}
+    persistIdentity(ACCOUNT_ID, realm);
   } else {
-    ACCOUNT_ID = findAccountFromStorage();
-    try {
-      if (!realm) realm = (localStorage.getItem('sag_last_realm') || 'eu').toLowerCase();
-    } catch (e) {}
+    const fb = loadIdentityFallback();
+    ACCOUNT_ID = fb.id;
+    if (!realm) realm = fb.realm;
   }
   if (!realm) realm = 'eu';
 
@@ -271,6 +329,8 @@
     localStorage.removeItem(lsTanks());
     localStorage.removeItem(lsOrder());
     localStorage.removeItem(lsTrend());
+    try { localStorage.removeItem('sag_session_snap'); } catch (e) {}
+    cookieSet('sag_session_snap', '');
     // legacy keys (старі назви) — щоб точно скинулось
     localStorage.removeItem('sag_car_acc_' + ACCOUNT_ID);
     localStorage.removeItem('sag_car_trend_' + ACCOUNT_ID);
@@ -334,14 +394,29 @@
       } catch (e) {}
 
       if (!startAcc) {
-        startAcc = currentAll;
-        localStorage.setItem(lsAcc(), JSON.stringify(startAcc));
-        // база по танках — щоб бокова панель бачила ту саму сесію
-        const startTanks = {};
-        const tankList = (tanksData && tanksData.data && tanksData.data[ACCOUNT_ID]) ? tanksData.data[ACCOUNT_ID] : [];
-        tankList.forEach(t => { startTanks[t.tank_id] = t.all; });
-        localStorage.setItem(lsTanks(), JSON.stringify(startTanks));
-        localStorage.removeItem(lsOrder());
+        // спроба взяти старт сесії з cookie/snap (ангар → бій)
+        const snap = loadSessionSnapshot();
+        if (snap && String(snap.id) === String(ACCOUNT_ID) && snap.acc) {
+          startAcc = snap.acc;
+          localStorage.setItem(lsAcc(), JSON.stringify(startAcc));
+          if (snap.tanks) {
+            try { localStorage.setItem(lsTanks(), JSON.stringify(snap.tanks)); } catch (e) {}
+          }
+        } else {
+          startAcc = currentAll;
+          localStorage.setItem(lsAcc(), JSON.stringify(startAcc));
+          const startTanks = {};
+          const tankList = (tanksData && tanksData.data && tanksData.data[ACCOUNT_ID]) ? tanksData.data[ACCOUNT_ID] : [];
+          tankList.forEach(t => { startTanks[t.tank_id] = t.all; });
+          localStorage.setItem(lsTanks(), JSON.stringify(startTanks));
+          localStorage.removeItem(lsOrder());
+          persistSessionSnapshot(startAcc, startTanks);
+        }
+      } else {
+        // оновлюємо snap, щоб бій бачив актуальну базу
+        let tanksObj = null;
+        try { tanksObj = JSON.parse(localStorage.getItem(lsTanks()) || 'null'); } catch (e) {}
+        persistSessionSnapshot(startAcc, tanksObj);
       }
 
       const battles = currentAll.battles - startAcc.battles;
@@ -385,8 +460,30 @@
       tick();
     }
   });
-  tick();
-  setInterval(tick, 5000);
+  async function tryConfigJson() {
+    if (ACCOUNT_ID) return;
+    try {
+      const r = await fetch('config.json?_=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const cfg = await r.json();
+      if (cfg && (cfg.account_id || cfg.dbid)) {
+        ACCOUNT_ID = String(cfg.account_id || cfg.dbid);
+        if (cfg.realm) realm = String(cfg.realm).toLowerCase();
+        persistIdentity(ACCOUNT_ID, realm);
+      }
+    } catch (e) {}
+  }
+
+  (async function boot() {
+    if (!ACCOUNT_ID) await tryConfigJson();
+    if (!ACCOUNT_ID) {
+      const fb = loadIdentityFallback();
+      ACCOUNT_ID = fb.id;
+      if (fb.realm) realm = fb.realm;
+    }
+    tick();
+    setInterval(tick, 5000);
+  })();
 })();
 </script>
 </body>
